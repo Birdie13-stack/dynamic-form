@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import './App.css';
 
 function DynamicForm() {
   const [formData, setFormData] = useState({
@@ -9,49 +10,86 @@ function DynamicForm() {
   });
 
   const [errors, setErrors] = useState({});
+  const [isFormValid, setIsFormValid] = useState(false);
+
+  const validateField = (name, value) => {
+    const validationErrors = { ...errors };
+
+    switch (name) {
+      case "name":
+        if (value.length < 3) {
+          validationErrors.name = "Name must be more than 3 characters";
+        } else {
+          delete validationErrors.name;
+        }
+        break;
+      case "email":
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
+          validationErrors.email = "Email is not valid";
+        } else {
+          delete validationErrors.email;
+        }
+        break;
+      case "password":
+        if (value.length < 8) {
+          validationErrors.password = "Password must be more than 8 characters";
+        } else if (!/\d/.test(value)) {
+          validationErrors.password = "Password must contain a number";
+        } else {
+          delete validationErrors.password;
+        }
+        break;
+      case "confirmPassword":
+        if (value !== formData.password) {
+          validationErrors.confirmPassword = "Passwords must match";
+        } else {
+          delete validationErrors.confirmPassword;
+        }
+        break;
+      default:
+        break;
+    }
+
+    setErrors(validationErrors);
+  };
+
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData({
       ...formData,
       [name]: value,
     });
+    validateField(name, value);
   };
+
+  useEffect(() => {
+    setIsFormValid(Object.keys(errors).length === 0 &&
+      formData.name.length >= 3 &&
+      /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email) &&
+      formData.password.length >= 8 &&
+      /\d/.test(formData.password) &&
+      formData.confirmPassword === formData.password);
+  }, [errors, formData]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
 
-    const validationErrors = {};
+    if (isFormValid) {
+      // Format form data for display
+      const dataString = `
+        Name: ${formData.name}
+        Email: ${formData.email}
+        Password: ${formData.password}
+        Confirm Password: ${formData.confirmPassword}
+      `;
 
-    if (formData.name.length < 3) {
-      validationErrors.username = "Username must be more than 3 characters";
-    }
-
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      validationErrors.email = "Email is not valid";
-    }
-
-    if (formData.password.length < 8) {
-      validationErrors.password = "Password must be more than 8 characters";
-    }
-
-    if (!/\d/.test(formData.password)) {
-      validationErrors.password = "Password must contain a number";
-    }
-
-    if (formData.confirmPassword !== formData.password) {
-      validationErrors.confirmPassword = "Passwords must match";
-    }
-
-    setErrors(validationErrors);
-
-    if(Object.keys(validationErrors).length === 0) {
-      alert("Form Submitted");
+      alert(`Form Submitted Successfully!\n${dataString}`);
     }
   };
 
   return (
     <div>
-      <form onSubmit={handleSubmit}>
+      <form onSubmit={handleSubmit} autoComplete="off">
         <div>
           <label htmlFor="name">Name</label>
           <br />
@@ -61,21 +99,26 @@ function DynamicForm() {
             placeholder="Name"
             required
             onChange={handleChange}
+            value={formData.name}
+            className={errors.name ? 'error' : ''}
+            autoComplete="off"
           />
-
-          {errors.username && <p style={{color: 'red'}}>{errors.username}</p>}
+          {errors.name && <p style={{color: 'red'}}>{errors.name}</p>}
         </div>
 
         <div>
-          <label htmlFor="">Email</label>
+          <label htmlFor="email">Email</label>
           <br />
           <input
+            type="email"
             name="email"
             placeholder="Email Address"
             required
             onChange={handleChange}
+            value={formData.email}
+            className={errors.email ? 'error' : ''}
+            autoComplete="off"
           />
-
           {errors.email && <p style={{color: 'red'}}>{errors.email}</p>}
         </div>
 
@@ -88,26 +131,30 @@ function DynamicForm() {
             placeholder="***********"
             required
             onChange={handleChange}
+            value={formData.password}
+            className={errors.password ? 'error' : ''}
+            autoComplete="new-password"
           />
-
           {errors.password && <p style={{color: 'red'}}>{errors.password}</p>}
         </div>
 
         <div>
-          <label htmlFor="password">Confirm Password</label>
+          <label htmlFor="confirmPassword">Confirm Password</label>
           <br />
           <input
             type="password"
-            name="confirmpassword"
+            name="confirmPassword"
             placeholder="**********"
             required
             onChange={handleChange}
+            value={formData.confirmPassword}
+            className={errors.confirmPassword ? 'error' : ''}
+            autoComplete="new-password"
           />
-
           {errors.confirmPassword && <p style={{color: 'red'}}>{errors.confirmPassword}</p>}
         </div>
 
-        <button type="submit" >Submit</button>
+        <button type="submit" disabled={!isFormValid}>Submit</button>
       </form>
     </div>
   );
